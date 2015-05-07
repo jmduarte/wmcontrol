@@ -44,10 +44,13 @@ def createOptionParser():
                     action='store_true')
   parser.add_option("--Type",
                     help="Defines the type of the workflow",
-                    choices=['HLT','PR','RECO+HLT'],
+                    choices=['HLT','PR','RECO+HLT','HLT+RECO'],
                     default='HLT')
   parser.add_option("--DQM",
                     help="Specify what is the DQM sequence needed for PR",
+                    default=None)
+  parser.add_option("--HLT",
+                    help="Specify what is the HLT sequence needed",
                     default=None)
 
   parser.add_option("--noSiteCheck",
@@ -155,7 +158,10 @@ def getDriverDetails(Type):
             "eventcontent":"FEVTDEBUGHLT,DQM",
             "inputcommands":'keep *,drop *_hlt*_*_HLT,drop *_TriggerResults_*_HLT',
             #"custcommands":'process.schedule.remove( process.HLTriggerFirstPath )',
-            "custcommands":'',
+            "custcommands":"process.load('Configuration.StandardSequences.Reconstruction_cff'); " +\
+                           "process.hltTrackRefitterForSiStripMonitorTrack.src = 'generalTracks'; " +\
+                           "\ntry:\n\tif process.RatesMonitoring in process.schedule: process.schedule.remove( process.RatesMonitoring );\nexcept: pass",
+            "custconditions":"JetCorrectorParametersCollection_CSA14_V4_MC_AK4PF,JetCorrectionsRecord,frontier://FrontierProd/CMS_CONDITIONS,AK4PF",
             "inclparents":"True"}
   HLTRECObase={"steps":"RAW2DIGI,L1Reco,RECO",
                "procname":"RECO",
@@ -164,6 +170,9 @@ def getDriverDetails(Type):
                "inputcommands":'',
                "custcommands":'',               
                }
+
+  if options.HLT:
+    HLTBase.update({"steps":"HLT:%s,DQM:triggerOfflineDQMSource"%(options.HLT)})
   if Type=='HLT':
     return HLTBase
   elif Type=='RECO+HLT':
@@ -213,13 +222,15 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
        "--eventcontent %s " %details['eventcontent']  +\
        "--conditions %s " %custgt +\
        "--python_filename %s " %cfgname +\
-       "--no_exec "       
-    if details['custcommands']!="":
-      driver_command += '--customise_commands="%s" ' %details['custcommands']       
+       "--no_exec " +\
+       "-n 10 " +\
+       "--filein file:HLT_RAW2DIGI_L1Reco_RECO.root "
     if details['inputcommands']!="":
       driver_command += '--inputCommands "%s" '%details['inputcommands']
-    #if custconditions!="":
-    #  driver_command += '--custom_conditions="%s" ' %custconditions 
+    if details['custconditions']!="":
+      driver_command += '--custom_conditions="%s" ' %details['custconditions']
+    if details['custcommands']!="":
+      driver_command += '--customise_commands="%s" ' %details['custcommands']       
 
     execme(driver_command)
 
@@ -234,7 +245,8 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                       "--eventcontent %s " %base['eventcontent']  +\
                       "--conditions %s " %options.basegt +\
                       "--python_filename reco.py " +\
-                      "--no_exec "       
+                      "--no_exec " +\
+                      "-n 10 "
       execme(driver_command)
       
 
