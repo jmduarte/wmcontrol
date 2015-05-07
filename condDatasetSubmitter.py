@@ -50,7 +50,8 @@ def createOptionParser():
                     help="Specify what is the DQM sequence needed for PR",
                     default=None)
   parser.add_option("--HLT",
-                    help="Specify what is the HLT sequence needed",
+                    help="Specify which HLT menu: SameAsRun uses the HLT menu corrresponding to the run",
+                    choices=['SameAsRun','GRun'],
                     default=None)
 
   parser.add_option("--noSiteCheck",
@@ -202,6 +203,12 @@ def execme(command):
     print " * Executed!"
 
 #-------------------------------------------------------------------------------
+def createHLTConfig(options):
+  hlt_command="hltGetConfiguration --cff --offline " +\
+      "run:%s "%options.run[0] +\
+      "> $CMSSW_BASE/src/HLTrigger/Configuration/python/HLT_SameAsRun_cff.py"
+  execme(hlt_command)
+  execme("cd $CMSSW_BASE/src; scram b; cd -")
 
 def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
 
@@ -381,6 +388,9 @@ if __name__ == "__main__":
     
   # Read the group of conditions from the list in the file
   confCondList= getConfCondDictionary(options)
+  
+  # Create the cff
+  if options.HLT=="SameAsRun": createHLTConfig(options)
   
   # Create the cfgs, both for cmsRun and WMControl  
   createCMSSWConfigs(options,confCondList,allRunsAndBlocks)
