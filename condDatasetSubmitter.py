@@ -179,6 +179,24 @@ def getDriverDetails(Type):
   elif Type=='RECO+HLT':
     HLTBase.update({'base':HLTRECObase})
     return HLTBase
+  elif Type=='HLT+RECO':
+    if options.HLT:
+      HLTBase.update({"steps":"HLT:%s"%(options.HLT),
+                      "custcommands":"\ntry:\n\tif process.RatesMonitoring in process.schedule: process.schedule.remove( process.RatesMonitoring );\nexcept: pass",
+                      "custconditions":""})
+    else:
+      HLTBase.update({"steps":"HLT",
+                      "custcommands":"\ntry:\n\tif process.RatesMonitoring in process.schedule: process.schedule.remove( process.RatesMonitoring );\nexcept: pass",
+                      "custconditions":""})
+    HLTRECObase={"steps":"RAW2DIGI,L1Reco,RECO,DQM:triggerOfflineDQMSource",
+                "procname":"RECO",
+                "datatier":"DQM",
+                "eventcontent":"DQM",
+                "inputcommands":'',
+                "custcommands":'',               
+                }
+    HLTBase.update({'recodqm':HLTRECObase})    
+    return HLTBase
   elif Type=='PR':
     theDetails={"reqtype":"PR",
                 "steps":"RAW2DIGI,L1Reco,RECO,DQM",
@@ -240,7 +258,7 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
       driver_command += '--customise_commands="%s" ' %details['custcommands']       
 
     execme(driver_command)
-
+    
     base=None
     if 'base' in details:
       base=details['base']
@@ -252,6 +270,21 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                       "--eventcontent %s " %base['eventcontent']  +\
                       "--conditions %s " %options.basegt +\
                       "--python_filename reco.py " +\
+                      "--no_exec " +\
+                      "-n 10 "
+      execme(driver_command)
+      
+    recodqm = None
+    if 'recodqm' in details:
+      recodqm=details['recodqm']
+      driver_command="cmsDriver.py %s " %details['reqtype']+\
+                      "-s %s " %recodqm['steps'] +\
+                      "--processName %s " % recodqm['procname'] +\
+                      "--data --scenario pp " +\
+                      "--datatier %s " % recodqm['datatier'] +\
+                      "--eventcontent %s " %recodqm['eventcontent']  +\
+                      "--conditions %s " %options.basegt +\
+                      "--python_filename recodqm.py " +\
                       "--no_exec " +\
                       "-n 10 "
       execme(driver_command)
@@ -281,6 +314,17 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
       gtshort=matched.group(1)
     else:
       gtshort=options.basegt
+      
+  if recodqm:
+    subgtshort = gtshort
+    refsubgtshort = refgtshort
+    #matched=re.match("(.*)::All",options.basegt)
+    #gtshort=matched.group(1)
+    matched=re.match("(.*),(.*),(.*)",options.basegt)
+    if matched:
+      gtshort=matched.group(1)
+    else:
+      gtshort=options.basegt
 
     
   
@@ -288,7 +332,7 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
   wmcconf_text= '[DEFAULT] \n'+\
                 'group=ppd \n'+\
                 'user=%s\n' %os.getenv('USER')
-  if base:
+  if base or recodqm:
     wmcconf_text+='request_type= TaskChain \n'
   else:
     wmcconf_text+='request_type= ReReco \n'+\
@@ -306,14 +350,15 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                    'cfg_path = reco.py\n' +\
                    'req_name = %s_RelVal_%s\n'%(details['reqtype'],options.run[0]) +\
                    '\n\n'
+  elif recodqm:
+    pass
   else:
     wmcconf_text+='[%s_default]\n' %details['reqtype'] +\
                    'cfg_path = REFERENCE.py\n' +\
                    'req_name = %s_reference_RelVal_%s\n'%(details['reqtype'],options.run[0]) ## take the first one of the list to label it
 
-
-
   task=2
+  print confCondList
   for (i,c) in enumerate(confCondList):
     cfgname=c[0]
     if "REFERENCE" in cfgname:
@@ -324,6 +369,16 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                        'step%d_input = Task1\n\n'%task
         task+=1
         continue
+      elif recodqm:
+        label=cfgname.lower().replace('.py','')
+        wmcconf_text+='\n\n[%s_%s]\n' %(details['reqtype'],label) +\
+                       'cfg_path = %s\n'%cfgname +\
+                       'req_name = %s_%s_RelVal_%s\n'%(details['reqtype'],label,options.run[0]) +\
+                       'globaltag = %s\n'%(refsubgtshort) +\
+                       'step%d_output = FEVTDEBUGHLToutput\n'%task +\
+                       'step%d_cfg = recodqm.py\n'%task +\
+                       'step%d_globaltag = %s \n'%(task,gtshort) +\
+                       'step%d_input = Task1\n\n'%task
       else:
         continue
 
@@ -334,10 +389,21 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                      'step%d_globaltag = %s\n'%(task,subgtshort) +\
                      'step%d_input = Task1\n\n'%task
       task+=1
+    elif recodqm:
+      if "REFERENCE" in cfgname: continue
+      label=cfgname.lower().replace('.py','')
+      wmcconf_text+='\n\n[%s_%s]\n' %(details['reqtype'],label) +\
+                     'cfg_path = %s\n'%cfgname +\
+                     'req_name = %s_%s_RelVal_%s\n'%(details['reqtype'],label,options.run[0]) +\
+                     'globaltag = %s\n'%(subgtshort) +\
+                     'step%d_output = FEVTDEBUGHLToutput\n'%task +\
+                     'step%d_cfg = recodqm.py\n'%task +\
+                     'step%d_globaltag = %s \n'%(task,gtshort) +\
+                     'step%d_input = Task1\n\n'%task
     else:
       label=cfgname.lower().replace('.py','')
-      wmcconf_text+='\n\n[%s_%s]\n' %(details['reqtype'],label)+\
-                     'cfg_path = %s\n'%cfgname+\
+      wmcconf_text+='\n\n[%s_%s]\n' %(details['reqtype'],label) +\
+                     'cfg_path = %s\n'%cfgname +\
                      'req_name = %s_%s_RelVal_%s\n'%(details['reqtype'],label,options.run[0])
 
 
