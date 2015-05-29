@@ -165,7 +165,7 @@ def isAtSite(ds, run):
 
 def getDriverDetails(Type):
   HLTBase= {"reqtype":"HLT",
-            "steps":"HLT,DQM:triggerOfflineDQMSource",
+            "steps":"HLT,DQM", #replaced DQM:triggerOfflineDQMSource with DQM
             "procname":"HLT2",
             "datatier":"RAW,DQM ",
             "eventcontent":"FEVTDEBUGHLT,DQM",
@@ -185,7 +185,7 @@ def getDriverDetails(Type):
                }
 
   if options.HLT:
-    HLTBase.update({"steps":"HLT:%s,DQM:triggerOfflineDQMSource"%(options.HLT)})
+    HLTBase.update({"steps":"HLT:%s,DQM"%(options.HLT)}) #replaced DQM:triggerOfflineDQMSource with DQM
   if Type=='HLT':
     return HLTBase
   elif Type=='RECO+HLT':
@@ -204,12 +204,14 @@ def getDriverDetails(Type):
                       "custconditions":"",
                       "datatier":"RAW",
                       "eventcontent":"FEVTDEBUGHLT"})
-    HLTRECObase={"steps":"RAW2DIGI,L1Reco,RECO,DQM:triggerOfflineDQMSource",
+    HLTRECObase={"steps":"RAW2DIGI,L1Reco,RECO,DQM", #replaced DQM:triggerOfflineDQMSource with DQM
                 "procname":"RECO",
-                "datatier":"RAW-RECO,DQM",
-                "eventcontent":"FEVTDEBUGHLT,DQM",
+                "datatier":"RECO,DQMIO",
+                "eventcontent":"RECO,DQM",
                 "inputcommands":'keep *',
-                "custcommands":'\nfrom Configuration.Applications.ConfigBuilder import ConfigBuilder\nprocess.triggerOfflineDQMSource.visit(ConfigBuilder.MassSearchReplaceProcessNameVisitor("HLT", "HLT2", whitelist = ("subSystemFolder",)))'}
+                #"custcommands":'\nfrom Configuration.Applications.ConfigBuilder import ConfigBuilder\nprocess.triggerOfflineDQMSource.visit(ConfigBuilder.MassSearchReplaceProcessNameVisitor("HLT", "HLT2", whitelist = ("subSystemFolder",)))'}
+                #"custcommands":'\nfrom Configuration.Applications.ConfigBuilder import ConfigBuilder\nprocess.DQMOffline.visit(ConfigBuilder.MassSearchReplaceProcessNameVisitor("HLT", "HLT2", whitelist = ("subSystemFolder",)))'
+                "custcommands":''}
     HLTBase.update({'recodqm':HLTRECObase})    
     return HLTBase
   elif Type=='PR':
@@ -306,6 +308,7 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                       "--datatier %s " % recodqm['datatier'] +\
                       "--eventcontent %s " %recodqm['eventcontent']  +\
                       "--conditions %s " %options.basegt +\
+                      "--hltProcess HLT2 " +\
                       "--filein=file:HLT_HLT.root " +\
                       "--python_filename recodqm.py " +\
                       "--no_exec " +\
@@ -318,7 +321,7 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
       
       driver_command="cmsDriver.py step4 " +\
                       "-s HARVESTING:dqmHarvesting " +\
-                      "--data " +\
+                      "--data --scenario pp " +\
                       "--filetype DQM " +\
                       "--conditions %s "%options.basegt +\
                       "--filein=file:HLT_RAW2DIGI_L1Reco_RECO_DQM_inDQM.root " +\
@@ -423,7 +426,7 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                        'step%d_input = Task1\n'%task
         if options.recoRelease:
           wmcconf_text+='step%d_release = %s \n'%(task,options.recoRelease)
-        wmcconf_text+='\n'
+        wmcconf_text+='harvest_cfg=step4_HARVESTING.py\n\n'
       else:
         continue
 
@@ -447,7 +450,7 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                      'step%d_input = Task1\n'%task
       if options.recoRelease:
         wmcconf_text+='step%d_release = %s \n'%(task,options.recoRelease)
-      wmcconf_text+='\n'
+      wmcconf_text+='harvest_cfg=step4_HARVESTING.py\n\n'
     else:
       label=cfgname.lower().replace('.py','')
       wmcconf_text+='\n\n[%s_%s]\n' %(details['reqtype'],label) +\
