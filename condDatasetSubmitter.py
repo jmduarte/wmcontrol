@@ -5,6 +5,7 @@ import os
 import sys
 import re
 from optparse import OptionParser
+import datetime
 
 sys.path.append('/afs/cern.ch/cms/PPD/PdmV/tools/prod/devel/')
 from phedex import phedex
@@ -417,12 +418,14 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
       elif recodqm:
         label=cfgname.lower().replace('.py','')
         wmcconf_text+='\n\n[%s_%s]\n' %(details['reqtype'],label) +\
+                       'KeepOutput = True\n' +\
                        'cfg_path = %s\n'%cfgname +\
                        'req_name = %s_%s_RelVal_%s\n'%(details['reqtype'],label,options.run[0]) +\
                        'globaltag = %s\n'%(refsubgtshort) +\
                        'step%d_output = FEVTDEBUGHLToutput\n'%task +\
                        'step%d_cfg = recodqm.py\n'%task +\
                        'step%d_globaltag = %s \n'%(task,gtshort) +\
+                       'step%d_processstring = %s_%s_%s \n'%(task,str(datetime.date.today()),label,refsubgtshort) +\
                        'step%d_input = Task1\n'%task
         if options.recoRelease:
           wmcconf_text+='step%d_release = %s \n'%(task,options.recoRelease)
@@ -441,12 +444,14 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
       if "REFERENCE" in cfgname: continue
       label=cfgname.lower().replace('.py','')
       wmcconf_text+='\n\n[%s_%s]\n' %(details['reqtype'],label) +\
+                     'KeepOutput = True\n' +\
                      'cfg_path = %s\n'%cfgname +\
                      'req_name = %s_%s_RelVal_%s\n'%(details['reqtype'],label,options.run[0]) +\
                      'globaltag = %s\n'%(subgtshort) +\
                      'step%d_output = FEVTDEBUGHLToutput\n'%task +\
                      'step%d_cfg = recodqm.py\n'%task +\
                      'step%d_globaltag = %s \n'%(task,gtshort) +\
+                     'step%d_processstring = %s_%s_%s \n'%(task,str(datetime.date.today()),label,subgtshort) +\
                      'step%d_input = Task1\n'%task
       if options.recoRelease:
         wmcconf_text+='step%d_release = %s \n'%(task,options.recoRelease)
@@ -511,4 +516,3 @@ if __name__ == "__main__":
   
   # Create the cfgs, both for cmsRun and WMControl  
   createCMSSWConfigs(options,confCondList,allRunsAndBlocks)
-

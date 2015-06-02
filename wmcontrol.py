@@ -988,7 +988,8 @@ def build_params_dict(section,cfg):
   if harvest_docID:
       ##setup automatic harvesting
       params.update({"EnableDQMHarvest" : 1,
-                     "DQMUploadUrl" : "https://cmsweb.cern.ch/dqm/offline",
+                     #"DQMUploadUrl" : "https://cmsweb.cern.ch/dqm/offline",
+                     "DQMUploadUrl" : "https://cmsweb.cern.ch/dqm/relval",
                      "DQMConfigCacheID" : harvest_docID})
 
 
