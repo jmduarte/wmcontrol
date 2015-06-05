@@ -285,9 +285,9 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
        "--eventcontent %s " %details['eventcontent']  +\
        "--conditions %s " %custgt +\
        "--python_filename %s " %cfgname +\
-       "--no_exec " +\
-       "--dump_python " + \
-       "-n 100 " 
+       "--no_exec --customise SLHCUpgradeSimulations/Configuration/muonCustoms.customise_csc_PostLS1 " +\
+       "--dump_python " +\
+       "-n 100 "
     if details['inputcommands']!="":
       driver_command += '--inputCommands "%s" '%details['inputcommands']
     if details['custconditions']!="":
@@ -327,7 +327,7 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                       "--hltProcess HLT2 " +\
                       "--filein=file:HLT_HLT.root " +\
                       "--python_filename recodqm.py " +\
-                      "--no_exec " +\
+                      "--no_exec --customise Configuration/DataProcessing/RecoTLR.customisePromptRun2 " +\
                       "-n 100 " +\
                       "--customise_commands='%s' " %recodqm['custcommands']
       if options.recoCmsswDir:
