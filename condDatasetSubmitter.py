@@ -6,6 +6,7 @@ import sys
 import re
 from optparse import OptionParser
 import datetime
+import json
 
 sys.path.append('/afs/cern.ch/cms/PPD/PdmV/tools/prod/devel/')
 from phedex import phedex
@@ -51,8 +52,11 @@ def createOptionParser():
                     help="Specify what is the DQM sequence needed for PR",
                     default=None)
   parser.add_option("--HLT",
-                    help="Specify which HLT menu: SameAsRun uses the HLT menu corrresponding to the run",
-                    choices=['SameAsRun','GRun'],
+                    help="Specify which default HLT menu: SameAsRun uses the HLT menu corrresponding to the run, Custom lets you choose it explicitly",
+                    choices=['SameAsRun','GRun','Custom'],
+                    default=None)
+  parser.add_option("--HLTCustomMenu",
+                    help="Specify a custom HLT menu",
                     default=None)
   parser.add_option("--recoCmsswDir",
                     help="CMSSW base directory for RECO step if different from HLT step (supported for HLT+RECO type)",
@@ -116,13 +120,18 @@ def getConfCondDictionary(conditions_filename):
 #-------------------------------------------------------------------------------
 
 def isPCLReady(run):
-  for line in os.popen('curl -s http://cms-alcadb.web.cern.ch/cms-alcadb/Monitoring/PCLTier0Workflow/log.txt').read().split('\n'):
-    if not line: continue
-    spl=line.split()
-    if spl[0]==str(run):
-      ready=eval(spl[7])
-      print "\n\n\tPCL ready for ",run,"\n\n"
-      return ready
+  mydict = json.loads(os.popen('curl -L --cookie ~/private/ssocookie.txt --cookie-jar ~/private/ssocookie.txt https://cms-conddb-prod.cern.ch/pclMon/get_latest_runs?run_class=Cosmics% -k').read())
+
+  #print mydict
+  
+  #for line in os.popen('curl -s http://cms-alcadb.web.cern.ch/cms-alcadb/Monitoring/PCLTier0Workflow/log.txt').read().split('\n'):
+  #  if not line: continue
+  #  spl=line.split()
+  #  if spl[0]==str(run):
+  #    ready=eval(spl[7])
+  #    print "\n\n\tPCL ready for ",run,"\n\n"
+  #    return ready
+  
   return False
 
 def isAtSite(ds, run):
@@ -241,9 +250,15 @@ def execme(command):
 #-------------------------------------------------------------------------------
 def createHLTConfig(options):
 
-  hlt_command="hltGetConfiguration --cff --offline " +\
-      "run:%s "%options.run[0] +\
-      "> %s/src/HLTrigger/Configuration/python/HLT_SameAsRun_cff.py"%options.hltCmsswDir
+  if options.HLT=="SameAsRun":    
+    hlt_command="hltGetConfiguration --cff --offline " +\
+                "run:%s "%options.run[0] +\
+                "> %s/src/HLTrigger/Configuration/python/HLT_%s_cff.py"%(options.hltCmsswDir,options.HLT)
+                
+  elif options.HLT=="Custom":
+    hlt_command="hltGetConfiguration --cff --offline " +\
+                "%s "%options.HLTCustomMenu +\
+                "> %s/src/HLTrigger/Configuration/python/HLT_%s_cff.py"%(options.hltCmsswDir,options.HLT)
       
   cmssw_command = "cd %s; eval `scramv1 runtime -sh`; cd -"%options.hltCmsswDir
   build_command = "cd %s/src; eval `scramv1 runtime -sh`; scram b; cd -"%options.hltCmsswDir
@@ -419,6 +434,8 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
         label=cfgname.lower().replace('.py','')
         wmcconf_text+='\n\n[%s_%s]\n' %(details['reqtype'],label) +\
                        'KeepOutput = True\n' +\
+                       'time_event = 1\n' +\
+                       'processing_string = %s_%s_%s \n'%(str(datetime.date.today()),label,refsubgtshort) +\
                        'cfg_path = %s\n'%cfgname +\
                        'req_name = %s_%s_RelVal_%s\n'%(details['reqtype'],label,options.run[0]) +\
                        'globaltag = %s\n'%(refsubgtshort) +\
@@ -426,7 +443,8 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                        'step%d_cfg = recodqm.py\n'%task +\
                        'step%d_globaltag = %s \n'%(task,gtshort) +\
                        'step%d_processstring = %s_%s_%s \n'%(task,str(datetime.date.today()),label,refsubgtshort) +\
-                       'step%d_input = Task1\n'%task
+                       'step%d_input = Task1\n'%task +\
+                       'step%d_timeevent = 20\n'%task
         if options.recoRelease:
           wmcconf_text+='step%d_release = %s \n'%(task,options.recoRelease)
         wmcconf_text+='harvest_cfg=step4_HARVESTING.py\n\n'
@@ -445,6 +463,8 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
       label=cfgname.lower().replace('.py','')
       wmcconf_text+='\n\n[%s_%s]\n' %(details['reqtype'],label) +\
                      'KeepOutput = True\n' +\
+                     'time_event = 1\n' +\
+                     'processing_string = %s_%s_%s \n'%(str(datetime.date.today()),label,subgtshort) +\
                      'cfg_path = %s\n'%cfgname +\
                      'req_name = %s_%s_RelVal_%s\n'%(details['reqtype'],label,options.run[0]) +\
                      'globaltag = %s\n'%(subgtshort) +\
@@ -452,7 +472,8 @@ def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
                      'step%d_cfg = recodqm.py\n'%task +\
                      'step%d_globaltag = %s \n'%(task,gtshort) +\
                      'step%d_processstring = %s_%s_%s \n'%(task,str(datetime.date.today()),label,subgtshort) +\
-                     'step%d_input = Task1\n'%task
+                     'step%d_input = Task1\n'%task +\
+                     'step%d_timeevent = 20\n'%task
       if options.recoRelease:
         wmcconf_text+='step%d_release = %s \n'%(task,options.recoRelease)
       wmcconf_text+='harvest_cfg=step4_HARVESTING.py\n\n'
@@ -512,7 +533,7 @@ if __name__ == "__main__":
   confCondList= getConfCondDictionary(options)
   
   # Create the cff
-  if options.HLT=="SameAsRun": createHLTConfig(options)
+  if options.HLT in ["SameAsRun","Custom"]: createHLTConfig(options)
   
   # Create the cfgs, both for cmsRun and WMControl  
   createCMSSWConfigs(options,confCondList,allRunsAndBlocks)
