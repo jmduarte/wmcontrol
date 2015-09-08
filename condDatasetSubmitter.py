@@ -48,9 +48,6 @@ def createOptionParser():
                     help="Defines the type of the workflow",
                     choices=['HLT','PR','PR+ALCA','RECO+HLT','HLT+RECO','HLT+RECO+ALCA'],
                     default='HLT')
-  parser.add_option("--DQM",
-                    help="Specify what is the DQM sequence needed for PR",
-                    default=None)
   parser.add_option("--HLT",
                     help="Specify which default HLT menu: SameAsRun uses the HLT menu corrresponding to the run, Custom lets you choose it explicitly",
                     choices=['SameAsRun','GRun','50nsGRun','Custom','25ns14e33_v3'],
@@ -221,7 +218,6 @@ def getDriverDetails(Type,B0T):
                       "output":'',
                       "datatier":"RAW",
                       "eventcontent":"RAW",
-                      "magfield":"0T",
                       "dumppython":True})
     else:
       HLTBase.update({"steps":"HLT",
@@ -268,8 +264,6 @@ def getDriverDetails(Type,B0T):
                             "customise":"Configuration/DataProcessing/RecoTLR.customisePromptRun2,RecoTracker/Configuration/customiseForRunI.customiseForRunI"}) 
     if Type=='PR+ALCA':
         theDetails.update({"steps":"RAW2DIGI,L1Reco,RECO,ALCA:SiStripCalMinBias,DQM"})
-    if options.DQM:
-      theDetails["steps"]="RAW2DIGI,L1Reco,RECO,DQM:%s"%(options.DQM)
     return theDetails
 
 #-------------------------------------------------------------------------------
@@ -302,8 +296,7 @@ def createHLTConfig(options):
 def createCMSSWConfigs(options,confCondDictionary,allRunsAndBlocks):
 
   details=getDriverDetails(options.Type,options.B0T)
-  if options.DQM:
-    details
+  
   # Create the drivers
   #print confCondDictionary
   #for cfgname,custconditions in confCondDictionary.items():
