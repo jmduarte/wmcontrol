@@ -157,7 +157,8 @@ I will ask you some questions to fill the metadata file. For some of the questio
                         'HLTCustomMenu': hlt_menu,                        
                         'basegt': basegt})
                     if metadata['PR_release'] != metadata['HLT_release']:
-                        metadata[options].update({'recoCmsswDir': '../%s/' % metadata['PR_release']})
+                        pr_release = metadata['PR_release']
+                        metadata['options']['recoCmsswDir'] = '../%s/' % pr_release
                         
 
                 metadata = json.dumps(metadata, sort_keys = True, indent = 4)
