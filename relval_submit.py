@@ -209,7 +209,7 @@ I will ask you some questions to fill the metadata file. For some of the questio
                 commands.append('./wmcontrol.py --req_file HLTConditionValidation_%s_%s_%s.conf' % (metadata['HLT_release'], metadata['options']['basegt'], metadata['options']['run']) )
         except KeyError:
             commands.append('./wmcontrol.py --req_file PRConditionValidation_%s_%s_%s.conf' % (metadata['PR_release'], metadata['options']['newgt'], metadata['options']['run']) )
-            
+        commands.append('rm *.couchID')
         
 
         
