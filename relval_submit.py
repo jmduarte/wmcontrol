@@ -101,7 +101,7 @@ def main():
                 print '''\nWizard for metadata
 I will ask you some questions to fill the metadata file. For some of the questions there are defaults between square brackets (i.e. []), leave empty (i.e. hit Enter) to use them.''' 
 
-                typeList = ['HLT+RECO','PR']
+                typeList = ['HLT+RECO','PR','HLT+RECO+ALCA','PR+ALCA']
                 
                 print '\nTypes of workflow submissions'
                 for (index, type) in enumerate(typeList):
@@ -109,19 +109,19 @@ I will ask you some questions to fill the metadata file. For some of the questio
                         
                 type = getInputChoose(typeList, '0', '\nWhich type of workflow submission\ntype [0]: ')
                                     
-                if type=='HLT+RECO':
+                if 'HLT+RECO' in type:
                     hlt_release = getInput('CMSSW_7_4_9_patch1', '\nWhich CMSSW release for HLT?\ne.g. CMSSW_7_4_9_patch1\nhlt_release [CMSSW_7_4_9_patch1]: ')
                     
                 pr_release = getInput('CMSSW_7_4_11_patch1', '\nWhich CMSSW release for Prompt Reco?\ne.g. CMSSW_7_4_11_patch1\npr_release [CMSSW_7_4_11_patch1]: ')
 
-                if type=='HLT+RECO':
+                if 'HLT+RECO' in type:
                     hlt_menu  = getInput('orcoff:/cdaq/physics/Run2015/25ns14e33/v3.5/HLT/V7', '\nWhich HLT menu?\ne.g. orcoff:/cdaq/physics/Run2015/25ns14e33/v3.5/HLT/V7\nhlt_menu [orcoff:/cdaq/physics/Run2015/25ns14e33/v3.5/HLT/V7]: ')
                 
                 newgt = getInput('74X_dataRun2_HLTValidation_2015-09-07-08-26-15', '\nWhat is the new GT to be validated?\ne.g. 74X_dataRun2_HLTValidation_2015-09-07-08-26-15\nnewgt [74X_dataRun2_HLTValidation_2015-09-07-08-26-15]: ')
                 
                 gt = getInput('74X_dataRun2_HLT_v1', '\nWhat is the reference GT?\ne.g. 74X_dataRun2_HLT_v1\ngt [74X_dataRun2_HLT_v1]: ')
                 
-                if type=='HLT+RECO':
+                if 'HLT+RECO' in type:
                     basegt = getInput('74X_dataRun2_Prompt_v1', '\nWhat is the common GT for Reco?\ne.g. 74X_dataRun2_Prompt_v1\nbasegt [74X_dataRun2_Prompt_v1]: ')
 
                 ds = getInput('/HLTPhysics/Run2015C-v1/RAW', '\nWhat is the dataset to be used?\ne.g. /HLTPhysics/Run2015C-v1/RAW\nds [/HLTPhysics/Run2015C-v1/RAW]: ')
@@ -153,7 +153,7 @@ I will ask you some questions to fill the metadata file. For some of the questio
                     metadata['options'].update({'B0T':''})
                 if hion.lower() == 'y':
                     metadata['options'].update({'HIon':''})
-                if type=='HLT+RECO':
+                if 'HLT+RECO' in type:
                     metadata['HLT_release'] = hlt_release
                     metadata['options'].update({
                         'HLT': 'Custom',
