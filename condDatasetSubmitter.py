@@ -165,6 +165,7 @@ def isAtSite(ds, run):
             #print block,'not complete at custodial site but ignoring'
             #blocks.append('#'+block.split('#')[-1])
           else:
+            print block,'complete at custodial site'
             blocks.append('#'+block.split('#')[-1])
             
   if len(blocks)==0:
