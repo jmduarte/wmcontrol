@@ -276,7 +276,7 @@ def getDriverDetails(Type,B0T,HIon):
         theDetails.update({"magfield":"0T",
                             "customise":"Configuration/DataProcessing/RecoTLR.customisePromptRun2,RecoTracker/Configuration/customiseForRunI.customiseForRunI"})
     if HIon:        
-        HLTRECObase.update({"customise":"Configuration/DataProcessing/RecoTLR.customiseRun2CommonHI"})
+        theDetails.update({"customise":"Configuration/DataProcessing/RecoTLR.customiseRun2CommonHI"})
     if Type=='PR+ALCA':
         theDetails.update({"steps":"RAW2DIGI,L1Reco,RECO,ALCA:SiStripCalMinBias,DQM"})
     return theDetails
