@@ -979,7 +979,6 @@ def build_params_dict(section,cfg):
       params.pop('BlockWhitelist')
       params.pop('BlockBlacklist')
 
-<<<<<<< HEAD
       params['TaskChain']=0
       task_index=0
       while stepN_docID[task_index]:
