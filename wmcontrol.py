@@ -643,7 +643,7 @@ def build_params_dict(section,cfg):
 
   number_events = int(cfg.get_param('number_events',0,section))
   #number_events = cfg.get_param('number_events',0,section)
-  version = cfg.get_param('version','',section)
+  version = cfg.get_param('version',1,section)
 
   ##new values for renewed Request Agent
   time_event = float(cfg.get_param('time_event',20,section))
